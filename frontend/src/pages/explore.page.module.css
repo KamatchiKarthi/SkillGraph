@@ -1,0 +1,63 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header h1 {
+  font-size: clamp(1.7rem, 6vw, 2.3rem);
+  margin-bottom: var(--space-2);
+}
+
+.header p {
+  color: var(--color-muted);
+}
+
+.searchPanel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.label {
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.searchPanel input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  font-size: 1rem;
+}
+
+.searchPanel input:focus {
+  outline: none;
+  border-color: var(--color-teal-bright);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.18);
+}
+
+.clear {
+  justify-self: start;
+  min-height: 2.4rem;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-muted);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.count {
+  color: var(--color-teal);
+  font-weight: 700;
+  font-size: 0.9rem;
+}

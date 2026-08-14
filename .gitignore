@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.cursor/
+.env
+.env.*
+**/.env
+**/.env.*
+frontend/.env
+*.log
+.DS_Store
+coverage/
+.vite/
+*.tsbuildinfo
+.turbo/

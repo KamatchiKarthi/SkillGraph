@@ -1,0 +1,107 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.back {
+  color: var(--color-teal);
+  font-weight: 700;
+  width: fit-content;
+  min-height: 2.4rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-ink);
+  color: white;
+  font-weight: 700;
+}
+
+.hero h1 {
+  font-size: clamp(1.6rem, 6vw, 2.3rem);
+}
+
+.title {
+  margin-top: 0.2rem;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.bio {
+  margin-top: var(--space-3);
+}
+
+.company {
+  margin-top: var(--space-2);
+  color: var(--color-ink-soft);
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.fullButton {
+  display: block;
+}
+
+.fullButton :global(button),
+.actions :global(button) {
+  width: 100%;
+  min-height: 2.9rem;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-2);
+  scroll-margin-top: 6rem;
+}
+
+.section h2 {
+  font-size: 1.2rem;
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.empty,
+.resultMeta {
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+@media (min-width: 720px) {
+  .hero {
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}

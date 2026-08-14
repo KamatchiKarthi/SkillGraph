@@ -1,0 +1,185 @@
+.page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.hero {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(160deg, rgba(20, 184, 166, 0.12), transparent 50%),
+    var(--color-surface-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.brand {
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  letter-spacing: -0.03em;
+}
+
+.lede {
+  max-width: 40rem;
+  font-size: clamp(1.05rem, 3.5vw, 1.2rem);
+  color: var(--color-ink-soft);
+  line-height: 1.45;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.actionLink {
+  display: inline-flex;
+}
+
+.actionLink :global(button) {
+  width: 100%;
+  min-height: 2.75rem;
+}
+
+.howBox,
+.assessBox,
+.screens {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.howBox h2,
+.assessBox h2,
+.screens h2 {
+  font-size: 1.2rem;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+}
+
+.stepNum {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-teal);
+  color: white;
+  font-weight: 700;
+}
+
+.steps p {
+  margin-top: 0.2rem;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.assessLead {
+  max-width: 42rem;
+  color: var(--color-ink-soft);
+}
+
+.assessList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.assessList li {
+  display: grid;
+  gap: 0.35rem;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.assessList strong {
+  color: var(--color-ink);
+}
+
+.screenGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.screenCard {
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+}
+
+.screenCard h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.35rem;
+}
+
+.screenCard p {
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    padding: var(--space-4);
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .actionLink {
+    width: 100%;
+  }
+}
+
+@media (min-width: 761px) {
+  .steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .steps li {
+    grid-template-columns: 1fr;
+    min-height: 100%;
+  }
+
+  .assessList {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .screenGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

@@ -1,0 +1,21 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--color-ink-soft);
+}
+
+.accent {
+  background: rgba(217, 119, 6, 0.14);
+  color: #92400e;
+}
+
+.teal {
+  background: rgba(20, 184, 166, 0.16);
+  color: var(--color-teal);
+}

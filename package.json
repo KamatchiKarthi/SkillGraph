@@ -1,0 +1,24 @@
+{
+  "name": "cognodb-skillgraph",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Career & Mentorship Skill Graph on CognoDB",
+  "scripts": {
+    "dev": "concurrently -n api,web -c teal,cyan \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "seed": "npm run seed -w backend",
+    "start": "npm run start -w backend"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
