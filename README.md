@@ -1,195 +1,107 @@
-# SkillGraph — CognoDB Career Mentorship Graph
+# SkillGraph
 
-Internal mentor matching for a company: find employees, see their skills, and suggest mentors who share those skills.
+Find a mentor at work. Open an employee, see their skills, and get ranked teammates who share those skills.
 
-**Real-world product this is like:** [Together](https://www.togetherplatform.com/) — companies use it so new hires and juniors can find a mentor inside the organization, instead of guessing who to ask.
+This is like [Together](https://www.togetherplatform.com/): companies help new hires find a mentor inside the org.
 
-MongoDB is replaced by **CognoDB** (Neo4j-compatible). Mentorship matching is stored and queried as a graph.
+MongoDB is replaced by **CognoDB** (Neo4j-compatible). Data is a graph. Queries are Cypher.
 
-## Why CognoDB (graph), not tables
+## Use case
 
-Mentorship is a path:
+New hires often do not know who to ask. SkillGraph uses the company skill network to answer:
 
-```text
-Person -[:HAS_SKILL]-> Skill <-[:HAS_SKILL]- Person
-Person -[:WORKS_AT]-> Company <-[:WORKS_AT]- Person
-Skill -[:RELATED_TO]- Skill
-```
+- **Who can mentor Maya?** People who share her skills.
+- **What should she learn next?** Skills next to hers (`RELATED_TO`).
+- **How can she get an intro to Tess?** The shortest chain through people, skills, companies, and roles.
 
-SQL needs many self-joins. Cypher walks the same edges with `MATCH` and `shortestPath`.
+No login. Seed data is the directory. Rank = how many skills two people both have (not interviews or ratings).
+
+## Why a graph database?
+
+These questions are **links between people**, not one table row.
+
+In SQL or Mongo you need many join tables (`person_skills`, companies, roles, related skills). Finding mentors is a self-join. A 6-step intro path needs recursive queries and still extra work to draw the trail.
+
+A graph stores people, skills, companies, and roles as **nodes**, and `HAS_SKILL` / `WORKS_AT` as **edges**. CognoDB speaks Bolt + Cypher, so this app uses `neo4j-driver`. Mentor match is one walk: person → skill ← other person. Rank is `size(sharedSkills)`. Intros use `shortestPath`. New skill links show up on the next request — no cached mentor table.
+
+| App question | Graph | Tables |
+| ------------ | ----- | ------ |
+| Mentors | 2 hops through a skill | Self-join + count |
+| Learn next | Neighbor skills | Extra join |
+| Intro path | `shortestPath` | Recursive CTE |
 
 ## Data model
 
-| Node | Meaning |
-| ---- | ------- |
-| Person | Employee |
-| Skill | Capability |
-| Company | Employer |
-| Role | Job target |
+```mermaid
+flowchart LR
+  Person -->|HAS_SKILL| Skill
+  Person -->|WORKS_AT| Company
+  Person -->|INTERESTED_IN| Role
+  Company -->|HIRES_FOR| Role
+  Skill -->|RELATED_TO| Skill
+```
 
-| Relationship | Meaning |
-| ------------ | ------- |
-| HAS_SKILL | Person knows a skill |
-| WORKS_AT | Person belongs to a company |
-| INTERESTED_IN | Person wants a role |
-| HIRES_FOR | Company hires for a role |
-| RELATED_TO | Two skills are adjacent |
+Example: Maya and Ava both have React → Ava can mentor Maya. React is related to TypeScript → a “learn next” hint.
 
-Seed (idempotent `MERGE`): 20 people, 20 skills, 8 companies, 10 roles.
+| Node | Meaning | Relationship | Meaning |
+| ---- | ------- | ------------ | ------- |
+| Person | Employee | `HAS_SKILL` | Person knows a skill |
+| Skill | Capability | `WORKS_AT` | Person works at a company |
+| Company | Employer | `INTERESTED_IN` | Person wants a role |
+| Role | Job target | `HIRES_FOR` | Company hires for a role |
+| | | `RELATED_TO` | Two skills are close |
 
-## How this app uses CognoDB
+Seed (`MERGE`, safe to re-run): 20 people, 20 skills, 8 companies, 10 roles.
 
-| Screen | Graph query |
-| ------ | ----------- |
-| Directory | `MATCH (p:Person)` search |
-| Profile | `HAS_SKILL`, `WORKS_AT`, `INTERESTED_IN` |
-| Related skills | `(Person)-[:HAS_SKILL]->(Skill)-[:RELATED_TO]-(Skill)` |
-| Mentors | shared-skill 2-hop: `Person → Skill ← Person` |
-| Connect | `shortestPath` up to 6 hops across relationship types |
+## Setup and run
 
-All Cypher is parameterized (`$id`, `$from`, `$to`). Only the repository talks to `neo4j-driver`. Cypher stays in the backend and this README — the UI does not show query text.
+### Create a CognoDB instance
 
-## Environment files
+1. Sign up at [cognodb.com](https://cognodb.com/) ([docs](https://cognodb.com/docs)).
+2. Create a **free c0** instance and pick a region (ready in about a minute).
+3. Copy **URI** (`bolt+s://….databases.cognodb.cloud`), **user** (`cognodb`), and **password** (shown once).
 
-`.env` and `.env.example` files are **gitignored** (root and `frontend/`). Do not commit secrets, passwords, or local templates.
+### Install
 
-Create the two files locally before you run the app.
+Node 18+. From the repo root:
 
-### 1. Root `.env` (backend + CognoDB)
+```bash
+npm install
+```
 
-Create `.env` in the repo root:
+### Env
+
+`.env` is gitignored. Create one in the **repo root**:
 
 ```env
-NEO4J_URI=bolt+s://YOUR_INSTANCE.databases.cognodb.com
+NEO4J_URI=bolt+s://YOUR_INSTANCE.databases.cognodb.cloud
 NEO4J_USER=cognodb
 NEO4J_PASSWORD=your-password-here
-
 PORT=4000
 NODE_ENV=development
 CORS_ORIGIN=http://localhost:5173
 ```
 
-| Variable | Required | Default | Used by | Meaning |
-| -------- | -------- | ------- | ------- | ------- |
-| `NEO4J_URI` | Yes | none | Backend CognoDB driver | Bolt URL from the CognoDB console. Use `bolt+s://` (or `neo4j+s://`) plus your instance host. |
-| `NEO4J_USER` | Yes | `neo4j` | Backend CognoDB driver | Database username. CognoDB often uses `cognodb`. |
-| `NEO4J_PASSWORD` | Yes | none | Backend CognoDB driver | Database password from the CognoDB console. Never commit this. |
-| `PORT` | No | `4000` | Express API | Port for `http://localhost:4000`. |
-| `NODE_ENV` | No | `development` | Backend | `development`, `production`, or `test`. |
-| `CORS_ORIGIN` | No | `http://localhost:5173` | Express CORS | Origin allowed to call the API. Must match the Vite app URL. |
+Optional `frontend/.env`: `VITE_API_BASE_URL=http://localhost:4000` (default is already that).
 
-The backend loads this file from the **repo root** (see `backend/src/config/env.ts`). Missing `NEO4J_URI` or `NEO4J_PASSWORD` stops the API from starting.
-
-### 2. Frontend `frontend/.env`
-
-Create `frontend/.env`:
-
-```env
-VITE_API_BASE_URL=http://localhost:4000
-```
-
-| Variable | Required | Default | Used by | Meaning |
-| -------- | -------- | ------- | ------- | ------- |
-| `VITE_API_BASE_URL` | No | `http://localhost:4000` | Vite frontend | Base URL for `/api/...` calls. Vite only exposes variables that start with `VITE_`. Restart `npm run dev` after changing this file. |
-
-If the frontend and API run on the defaults above, you can omit `frontend/.env`. Set it when the API is on another host or port.
-
-### Local templates (optional)
-
-You may keep local copies named `.env.example` and `frontend/.env.example` as reminders. Git ignores them. Treat README as the source of truth for variable names.
-
-### Where to get CognoDB values
-
-1. Open your CognoDB project.
-2. Copy the Bolt connection URI into `NEO4J_URI`.
-3. Copy the username into `NEO4J_USER`.
-4. Copy the password into `NEO4J_PASSWORD`.
-5. Save `.env`, then run `npm run seed` and `npm run dev`.
-
-## Setup
+### Seed and start
 
 ```bash
-npm install
 npm run seed
 npm run dev
-npm run build
 ```
-
-Create `.env` and optionally `frontend/.env` first (see **Environment files**).
-
-Use `npm run build` (not `npm build`) to typecheck and build the API and web app.
 
 - App: http://localhost:5173
 - Health: http://localhost:4000/api/health
-- Graph counts: http://localhost:4000/api/graph/stats
+- Counts: http://localhost:4000/api/graph/stats
 
-## How to use the UI
+Build: `npm run build` (not `npm build`).
 
-There is no login. Anyone with the app can browse the seeded company directory.
+## Main queries
 
-1. **Home** — Read what the product does, how to walk through it, and how mentor matches are assessed.
-2. **Directory** — Search people by name or job title. Open a person to see their profile.
-3. **Profile** — Skills, company, roles they want, related skills to learn next, and ranked mentor matches.
-4. **Connect** — Pick two employees. The app shows the shortest workplace link (shared skill, same company, or related skill).
+Cypher is in `backend/src/infrastructure/neo4j/cypher/queries.ts`. Values go in as `$id`, `$from`, `$to` — not string concat. The UI does not show Cypher.
 
-Typical walk:
-
-Directory → open a person → scroll to **Mentor matches** → open a mentor profile, or use **How they connect** to see the intro path.
-
-## How mentor matching is assessed
-
-This is **skill-overlap assessment**, not interviews, ratings, or manager reviews.
-
-| What you see | How it is decided |
-| ------------ | ----------------- |
-| Mentor list | Other people who share at least one skill with the person on the profile. The person is not matched to themselves. |
-| Rank (`1`, `2`, `3`…) | More shared skills = higher rank. Rank `1` is labeled **Best match**. Equal overlap is ordered by name. |
-| Why this mentor | The overlapping skill names. That is the reason they appear. |
-| Shared skill count | Distinct skills both people have (`HAS_SKILL` on both). |
-| Good next skills | Skills linked with `RELATED_TO` that the person does not already have. These are learning suggestions, not a mentor score. |
-| Connect trail | Shortest path of at most 6 hops. This is a warm-intro map, not a quality score. |
-
-Someone with 4 shared skills ranks above someone with 1 shared skill, even if they work at a different company. Company and role are shown for context; they do not change the mentor rank.
-
-## Check that CognoDB has data
-
-In the CognoDB console:
-
-```cypher
-MATCH (n)
-UNWIND labels(n) AS label
-RETURN label, count(*) AS total
-```
-
-```cypher
-MATCH ()-[r]->()
-RETURN type(r) AS type, count(*) AS total
-```
-
-Or open `/api/people?q=` — you should see Person nodes.
-
-## Sample walks (from seed)
-
-Use these after `npm run seed`. They are not hardcoded as UI shortcuts.
-
-1. **Shared-skill mentors**  
-   Open `/people/p-maya`. Mentor matches should include people who share React / TypeScript (for example Ava). Rank `1` has the most overlap.
-
-2. **RELATED_TO expansion**  
-   Same profile shows skills adjacent to Maya’s skills that she does not already have.
-
-3. **shortestPath**  
-   Connect page: From `Maya Patel` (`p-maya`) To `Tess Jordan` (`p-tess`).  
-   The trail can go through skills, companies, or related skills.
-
-4. **API**  
-   - `GET /api/people/p-maya/mentors`  
-   - `GET /api/people/p-maya/related-skills`  
-   - `GET /api/paths?from=p-maya&to=p-tess`
-
-## Cypher used in the product
-
-**Mentors (assessment query)**
+**Mentors** — walk out to skills, back to other people. More shared skills = higher rank.
 
 ```cypher
 MATCH (seeker:Person {id: $id})-[:HAS_SKILL]->(shared:Skill)<-[:HAS_SKILL]-(mentor:Person)
@@ -198,7 +110,15 @@ RETURN mentor, collect(DISTINCT shared) AS sharedSkills
 ORDER BY size(sharedSkills) DESC
 ```
 
-**Shortest path**
+**Learn next** — skills linked to yours that you do not already have.
+
+```cypher
+MATCH (p:Person {id: $id})-[:HAS_SKILL]->(owned:Skill)-[:RELATED_TO]-(related:Skill)
+WHERE NOT (p)-[:HAS_SKILL]->(related)
+RETURN DISTINCT related, owned.name AS via
+```
+
+**Connect** — shortest path, max 6 steps, mixed link types.
 
 ```cypher
 MATCH (from:Person {id: $from}), (to:Person {id: $to})
@@ -208,32 +128,42 @@ MATCH path = shortestPath(
 RETURN path
 ```
 
-**Related skills**
+After seed: profile `/people/p-maya`, API `GET /api/people/p-maya/mentors`, Connect Maya (`p-maya`) → Tess (`p-tess`).
 
-```cypher
-MATCH (p:Person {id: $id})-[:HAS_SKILL]->(owned:Skill)-[:RELATED_TO]-(related:Skill)
-WHERE NOT (p)-[:HAS_SKILL]->(related)
-RETURN DISTINCT related, owned.name AS via
-```
+## Screens
+
+Walk: Directory → open a profile → Mentor matches → Connect for the intro trail.
+
+**Home** — what the product does
+
+![Home](ui_img/Screenshot%202026-08-14%20125923.png)
+
+**Directory** — search people, then open a profile
+
+![Directory](ui_img/Screenshot%202026-08-14%20130022.png)
+
+**Profile** — skills, company, and related skills
+
+![Profile](ui_img/Screenshot%202026-08-14%20130351.png)
+
+**Mentor matches** — ranked by shared skills (rank 1 = best match)
+
+![Mentor matches](ui_img/Screenshot%202026-08-14%20130411.png)
+
+**Connect** — shortest path between two people
+
+![Connect](ui_img/Screenshot%202026-08-14%20130436.png)
 
 ## API
 
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
 | GET | `/api/health` | App + CognoDB |
-| GET | `/api/graph/stats` | Node and relationship counts |
+| GET | `/api/graph/stats` | Node / relationship counts |
 | GET | `/api/people?q=` | Search people |
-| GET | `/api/people/:id` | Profile + neighbors |
-| GET | `/api/people/:id/mentors` | Shared-skill mentors + Cypher meta |
-| GET | `/api/people/:id/related-skills` | RELATED_TO expansion |
-| GET | `/api/paths?from=&to=` | shortestPath + Cypher meta |
-| GET | `/api/skills/:id/related` | Skill adjacency |
+| GET | `/api/people/:id` | Profile |
+| GET | `/api/people/:id/mentors` | Shared-skill mentors |
+| GET | `/api/people/:id/related-skills` | Learn-next skills |
+| GET | `/api/paths?from=&to=` | Shortest path |
 
-## Layout
-
-```text
-backend/src/   Clean Architecture, Cypher in repositories
-frontend/src/  Feature modules, TanStack Query
-```
-
-Out of scope: auth, Redux, MongoDB, 3D graph libraries.
+`backend/` = API (Cypher only in the repository). `frontend/` = React UI. No auth, no Mongo.
